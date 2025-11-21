@@ -1,0 +1,11 @@
+name: lianes-library
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pandas
+  - matplotlib
+  - beautifulsoup4
+  - ipykernel
+  - pip
