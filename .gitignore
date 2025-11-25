@@ -1,13 +1,18 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.env
+.DS_Store
 
-# Streamlit cache
-.streamlit/
+# Jupyter
+.ipynb_checkpoints/
+# data and large binaries (ignore or manage with git-lfs)
+data/
+*.sqlite
+*.db
+*.csv
+*.parquet
 
-# Virtual environments
-venv/
-.env/
-
-# VS Code
+# IDE/config
 .vscode/
