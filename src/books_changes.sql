@@ -1,17 +1,24 @@
 USE lianes_library;
-    CREATE TABLE books (
+
+-- ============================
+-- 1) CREATE TABLE books (RAW)
+-- ============================
+CREATE TABLE books (
     book_id INT AUTO_INCREMENT PRIMARY KEY,
     ISBN VARCHAR(20) NOT NULL UNIQUE,
-    number_of_pages INT,
     title VARCHAR(255) NOT NULL,
-    author VARCHAR(255) NOT NULL,
+    author VARCHAR(255) NOT NULL,            -- Will be migrated to authors table
     publisher VARCHAR(255),
+    number_of_pages INT,
     publishing_date DATE,
     acquisition_date DATE,
-    reading_status ENUM('not started', 'in progress', 'finished'),
-    edition VARCHAR(50)
+    edition VARCHAR(50),
+    reading_status ENUM('not started', 'in progress', 'finished')
 );
 
+-- ============================
+-- 2) CREATE TABLE borrowers
+-- ============================
 CREATE TABLE borrowers (
     person_id INT AUTO_INCREMENT PRIMARY KEY,
     first_name VARCHAR(255) NOT NULL, 
@@ -22,6 +29,9 @@ CREATE TABLE borrowers (
     address VARCHAR(255)
 );
 
+-- ============================
+-- 3) CREATE TABLE transactions
+-- ============================
 CREATE TABLE transactions (
     transaction_id INT AUTO_INCREMENT PRIMARY KEY,
     book_id INT NOT NULL,
@@ -33,6 +43,9 @@ CREATE TABLE transactions (
     FOREIGN KEY (person_id) REFERENCES borrowers(person_id)
 );
 
+-- ============================
+-- 4) MODIFY books to final format
+-- ============================
 ALTER TABLE books
     DROP COLUMN number_of_pages,
     DROP COLUMN publisher,
@@ -41,5 +54,4 @@ ALTER TABLE books
     DROP COLUMN edition,
     DROP COLUMN reading_status,
     ADD COLUMN cost_book DECIMAL(10, 2),
-    ADD COLUMN book_status ENUM('available', 'borrowed', 'overdue', "removed") NOT NULL DEFAULT 'available';
-    
+    ADD COLUMN book_status ENUM('available', 'borrowed', 'overdue', 'removed') NOT NULL DEFAULT 'available';
