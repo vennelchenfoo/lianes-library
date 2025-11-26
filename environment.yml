@@ -10,4 +10,19 @@ dependencies:
   - matplotlib
   - beautifulsoup4
   - ipykernel
+  - requests
+  - pymysql
+  - cryptography
+  - pyarrow
+  - openpyxl
+  - lxml
+  - tqdm
+  - notebook
+  - jupyterlab
+  - pytest
   - pip
+
+  # If you need additional pip-only packages, list them under pip: below
+  # pip:
+  #   - google-api-python-client
+  #   - some-other-pip-only-package
