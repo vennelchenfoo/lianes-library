@@ -1,0 +1,26 @@
+USE lianes_library;
+
+CREATE TABLE authors (
+    author_id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+ALTER TABLE books
+    ADD COLUMN author_id INT NULL;
+
+INSERT INTO authors (name)
+SELECT DISTINCT author
+FROM books
+WHERE author IS NOT NULL;
+
+UPDATE books b
+JOIN authors a ON a.name = b.author
+SET b.author_id = a.author_id;
+
+ALTER TABLE books
+    MODIFY author_id INT NOT NULL,
+    ADD CONSTRAINT fk_books_authors
+        FOREIGN KEY (author_id) REFERENCES authors(author_id);
+
+ALTER TABLE books
+    DROP COLUMN author;
