@@ -436,6 +436,116 @@ def process_return(transaction_id: int, return_date: Optional[date] = None) -> D
 	}
 
 
+def process_return_by_book(
+	book_id: Optional[int] = None,
+	book_title: Optional[str] = None,
+	return_date: Optional[date] = None,
+) -> Dict[str, Any]:
+	"""
+	UPDATE: Process a book return using book_id or book_title.
+
+	Finds the active loan for the given book and processes the return.
+
+	Args:
+		book_id: ID of the book being returned (optional)
+		book_title: Title of the book being returned (optional, partial match)
+		return_date: Date of return (defaults to today)
+
+	Returns:
+		Dict with return details including late status
+
+	Raises:
+		ValueError: If no active loan found for this book or no identifier provided
+	"""
+	engine = get_engine()
+
+	if book_id is None and book_title is None:
+		raise ValueError("Must provide either book_id or book_title.")
+
+	if return_date is None:
+		return_date = date.today()
+
+	# Build query based on provided identifier
+	if book_id is not None:
+		get_active_loan_sql = text("""
+			SELECT t.transaction_id, t.book_id, t.person_id, 
+				   t.loan_date, t.due_date, t.actual_return_date,
+				   b.title as book_title,
+				   br.first_name, br.last_name
+			FROM transactions t
+			JOIN books b ON t.book_id = b.book_id
+			JOIN borrowers br ON t.person_id = br.person_id
+			WHERE t.book_id = :book_id
+			  AND t.actual_return_date IS NULL
+			ORDER BY t.loan_date DESC
+			LIMIT 1
+		""")
+		params = {"book_id": book_id}
+	else:
+		# Search by title (partial match)
+		get_active_loan_sql = text("""
+			SELECT t.transaction_id, t.book_id, t.person_id, 
+				   t.loan_date, t.due_date, t.actual_return_date,
+				   b.title as book_title,
+				   br.first_name, br.last_name
+			FROM transactions t
+			JOIN books b ON t.book_id = b.book_id
+			JOIN borrowers br ON t.person_id = br.person_id
+			WHERE b.title LIKE :book_title
+			  AND t.actual_return_date IS NULL
+			ORDER BY t.loan_date DESC
+			LIMIT 1
+		""")
+		params = {"book_title": f"%{book_title}%"}
+
+	update_transaction_sql = text("""
+		UPDATE transactions 
+		SET actual_return_date = :return_date 
+		WHERE transaction_id = :transaction_id
+	""")
+
+	update_book_status_sql = text("""
+		UPDATE books 
+		SET book_status = 'available' 
+		WHERE book_id = :book_id
+	""")
+
+	# Execute in transaction
+	with engine.begin() as conn:
+		# Step 1: Find active loan for this book
+		trans = conn.execute(get_active_loan_sql, params).mappings().one_or_none()
+
+		if trans is None:
+			identifier = f"book ID {book_id}" if book_id else f"title '{book_title}'"
+			raise ValueError(f"No active loan found for {identifier}.")
+
+		# Step 2: Update transaction with return date
+		conn.execute(update_transaction_sql, {
+			"transaction_id": trans["transaction_id"],
+			"return_date": return_date,
+		})
+
+		# Step 3: Update book status to available
+		conn.execute(update_book_status_sql, {"book_id": trans["book_id"]})
+
+	# Calculate if return was late
+	is_late = return_date > trans["due_date"]
+	days_late = (return_date - trans["due_date"]).days if is_late else 0
+
+	return {
+		"transaction_id": trans["transaction_id"],
+		"book_id": trans["book_id"],
+		"book_title": trans["book_title"],
+		"borrower_name": f"{trans['first_name']} {trans['last_name']}",
+		"loan_date": trans["loan_date"],
+		"due_date": trans["due_date"],
+		"return_date": return_date,
+		"is_late": is_late,
+		"days_late": days_late,
+		"status": "returned",
+	}
+
+
 def get_active_loans() -> pd.DataFrame:
 	engine = get_engine()
 	query = text("""

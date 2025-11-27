@@ -30,6 +30,7 @@ from src.CRUD_Blueprint import (
     # LOANS / TRANSACTIONS
     create_loan,
     process_return,
+    process_return_by_book,
     get_active_loans,
     get_overdue_loans,
     get_loan_history_by_book,
@@ -594,7 +595,7 @@ elif section == "transactions":
 
     trans_action = st.radio(
         "Choose an action:",
-        ["Create loan", "Process return", "Active loans", "Overdue loans", "Loan history by book", "Loan history by borrower"],
+        ["Create loan", "Process return", "Return by book", "Active loans", "Overdue loans", "Loan history by book", "Loan history by borrower"],
         horizontal=False,
     )
 
@@ -647,6 +648,36 @@ elif section == "transactions":
                 st.json(result)
             except Exception as e:
                 st.error(f"Error processing return: {e}")
+
+    # Return by book (book_id or partial title)
+    elif trans_action == "Return by book":
+        from datetime import date
+
+        with st.form("process_return_by_book_form"):
+            book_id = st.text_input("Book ID (optional)")
+            book_title = st.text_input("Book title (optional, partial match)")
+            return_date = st.date_input("Return date", value=date.today())
+            submitted = st.form_submit_button("Process return by book")
+
+        if submitted:
+            try:
+                bid = None
+                if book_id and book_id.strip():
+                    try:
+                        bid = int(book_id)
+                    except Exception:
+                        st.error("Invalid Book ID value. Use an integer or leave blank.")
+                        bid = None
+
+                result = process_return_by_book(
+                    book_id=bid,
+                    book_title=book_title or None,
+                    return_date=return_date,
+                )
+                st.success("Return processed successfully:")
+                st.json(result)
+            except Exception as e:
+                st.error(f"Error processing return by book: {e}")
 
     # Active loans
     elif trans_action == "Active loans":
