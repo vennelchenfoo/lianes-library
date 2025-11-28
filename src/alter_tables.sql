@@ -77,3 +77,18 @@ DELIMITER ;
 -- ============================
 
 ALTER TABLE transactions CHANGE COLUMN expected_return_date due_date DATE;
+
+-- ============================
+-- 6) ADD table price_history
+-- ============================
+
+CREATE TABLE price_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    book_id INT NOT NULL,
+    isbn VARCHAR(20),
+    price DECIMAL(10, 2),
+    currency VARCHAR(10),
+    source VARCHAR(50),
+    checked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
